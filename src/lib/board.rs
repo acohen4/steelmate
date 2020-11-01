@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub enum PieceKind {
     King,
     Queen,
@@ -11,13 +12,13 @@ pub enum PieceKind {
     Pawn,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Color {
     Black,
     White,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Piece {
     pub kind: PieceKind,
     pub color: Color,
@@ -33,29 +34,29 @@ impl Piece {
         match self.color {
             Color::White => {
                 match self.kind {
-                    PieceKind::King => "♔".to_string(),
-                    PieceKind::Queen => "♕".to_string(),
-                    PieceKind::Rook => "♖".to_string(),
-                    PieceKind::Bishop => "♗".to_string(),
-                    PieceKind::Knight => "♘".to_string(),
-                    PieceKind::Pawn => "♙".to_string(),
+                    PieceKind::King => String::from("♔"),
+                    PieceKind::Queen => String::from("♕"),
+                    PieceKind::Rook => String::from("♖"),
+                    PieceKind::Bishop => String::from("♗"),
+                    PieceKind::Knight => String::from("♘"),
+                    PieceKind::Pawn => String::from("♙"),
                 }
             }
             Color::Black => {
                 match self.kind {
-                    PieceKind::King => "♚".to_string(),
-                    PieceKind::Queen => "♛".to_string(),
-                    PieceKind::Rook => "♜".to_string(),
-                    PieceKind::Bishop => "♝".to_string(),
-                    PieceKind::Knight => "♞".to_string(),
-                    PieceKind::Pawn => "♟︎".to_string(),
+                    PieceKind::King => String::from("♚"),
+                    PieceKind::Queen => String::from("♛"),
+                    PieceKind::Rook => String::from("♜"),
+                    PieceKind::Bishop => String::from("♝"),
+                    PieceKind::Knight => String::from("♞"),
+                    PieceKind::Pawn => String::from("♟︎"),
                 }
             }
         }
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub struct Position {
     pub row: i32,
     pub col: i32,
@@ -84,6 +85,7 @@ impl Position {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Board {
     size: i32,
     board: HashMap<Position, Piece>,
@@ -95,10 +97,14 @@ impl Board {
             Err("cannot have a negative size".to_string())
         } else {
             Ok(Board {
-                size,
+                size: size,
                 board: HashMap::new(),
             })
         }
+    }
+
+    pub fn get_piece_positions(&self) -> &HashMap<Position, Piece> {
+        &self.board
     }
 
     pub fn fill(&mut self, row: Option<i32>, column: Option<i32>,
@@ -155,8 +161,16 @@ impl Board {
         Ok(self.board.get(p))
     }
 
-    pub fn pretty_print(&self) {
-        println!("{}", self.get_chess_row_boarder_string());
+    pub fn is_empty_space(&self, p: &Position) -> bool {
+        match self.get_space(p) {
+            Ok(Option::None) => true,
+            _ => false,
+        }
+    }
+
+    pub fn pretty(&self) -> String {
+        let mut res = String::new();
+        res.push_str(&format!("{}\n", &self.get_chess_row_boarder_string()));
         for row in 0..self.size {
             let mut row_string = String::from("|");
             for col in 0..self.size {
@@ -170,9 +184,14 @@ impl Board {
                     row_string.push_str("  |");
                 }
             }
-            println!("{}", row_string);
-            println!("{}", self.get_chess_row_boarder_string());
+            res.push_str(&format!("{}\n", &row_string));
+            res.push_str(&format!("{}\n", &self.get_chess_row_boarder_string()));
         }
+        res
+    }
+
+    pub fn pretty_print(&self) {
+        println!("{}", &self.pretty());
     }
 
     pub fn get_size(&self) -> i32 {
@@ -194,14 +213,14 @@ impl Board {
     pub fn validate_position(&self, p: &Position) -> Result<(), String> {
         if Board::is_out_of_bounds(p.col, 0, self.size)
             || Board::is_out_of_bounds(p.row, 0, self.size) {
-            Err("Index out of bounds".to_string())
+            Err(String::from("Index out of bounds"))
         } else {
             Ok(())
         }
     }
 
     fn is_out_of_bounds<T: Ord>(val: T, lower: T, upper: T) -> bool {
-        val < lower || val > upper
+        val < lower || val >= upper
     }
 }
 
